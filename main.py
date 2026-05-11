@@ -16,13 +16,21 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 
-SUPABASE_URL = os.environ['SUPABASE_URL']
-SUPABASE_KEY = os.environ['SUPABASE_KEY']
-TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
-TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
-TWILIO_WHATSAPP_NUMBER = os.environ['TWILIO_WHATSAPP_NUMBER']
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_WHATSAPP_NUMBER = os.environ.get('TWILIO_WHATSAPP_NUMBER', '')
 DAILY_GOAL_ML = int(os.environ.get('DAILY_GOAL_ML', '2000'))
-ADMIN_PHONE = os.environ['ADMIN_PHONE']
+ADMIN_PHONE = os.environ.get('ADMIN_PHONE', '')
+
+missing = [k for k, v in {
+    'SUPABASE_URL': SUPABASE_URL, 'SUPABASE_KEY': SUPABASE_KEY,
+    'TWILIO_ACCOUNT_SID': TWILIO_ACCOUNT_SID, 'TWILIO_AUTH_TOKEN': TWILIO_AUTH_TOKEN,
+    'TWILIO_WHATSAPP_NUMBER': TWILIO_WHATSAPP_NUMBER, 'ADMIN_PHONE': ADMIN_PHONE,
+}.items() if not v]
+if missing:
+    logger.warning('Missing environment variables: %s', missing)
 
 IST = ZoneInfo('Asia/Kolkata')
 
