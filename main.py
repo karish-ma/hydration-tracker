@@ -295,6 +295,17 @@ def webhook():
             reply.body(welcome_message(user))
             return str(resp)
 
+        if any(word in cmd for word in ['thank', 'thanks', 'ty', 'thx', '🙏', '😊', '❤️', '🥰', '😍', 'love']):
+            replies = [
+                f'Aww, {greeting(user)}! 🥰 You are so welcome! Keep drinking water!',
+                f'Of course, {greeting(user)}! 💧 That is what I am here for! Stay hydrated!',
+                f'{greeting(user)}, you are too sweet! 🌸 Now go drink some water!',
+                f'Always, {greeting(user)}! 🥰 Your health is everything!',
+            ]
+            day = datetime.now(IST).timetuple().tm_yday
+            reply.body(replies[day % len(replies)])
+            return str(resp)
+
         if cmd == 'help':
             reply.body(
                 '💧 *Hydration Tracker*\n\n'
