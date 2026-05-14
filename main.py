@@ -46,10 +46,41 @@ ADJECTIVES = [
     'Dear', 'Precious', 'Sunshine', 'Delightful', 'Incredible',
 ]
 
+LOG_CHEERS = [
+    'Great job logging your water! 💧',
+    'Every sip counts — keep it up! 🌊',
+    'So proud of you for staying hydrated! 💪',
+    'You are doing amazing! 🌟',
+    'Keep going, you are on a roll! 🎉',
+    'That is the spirit! Hydration goals incoming! 💦',
+    'Love seeing you take care of yourself! 🥰',
+    'One sip at a time — you have got this! 👏',
+    'Fantastic! Your body thanks you! 🙏',
+    'Brilliant effort! Stay hydrated, stay glowing! ✨',
+]
+
+STATUS_CHEERS = [
+    'Here is your update! Keep drinking! 💧',
+    'How are you doing today? 🌊',
+    'Stay on track, you are doing great! 💪',
+    'Check in complete! Keep going! 🌟',
+    'Every ml counts! 💦',
+]
+
 
 def daily_adjective() -> str:
     day = datetime.now(IST).timetuple().tm_yday
     return ADJECTIVES[day % len(ADJECTIVES)]
+
+
+def log_cheer() -> str:
+    day = datetime.now(IST).timetuple().tm_yday
+    return LOG_CHEERS[day % len(LOG_CHEERS)]
+
+
+def status_cheer() -> str:
+    day = datetime.now(IST).timetuple().tm_yday
+    return STATUS_CHEERS[day % len(STATUS_CHEERS)]
 
 
 def display_name(user: dict) -> str:
@@ -280,7 +311,7 @@ def webhook():
         if cmd == 'status':
             total = get_today_total(phone)
             pct = min(100, int(total / goal * 100))
-            reply.body(f'💧 Today: {total}/{goal}ml ({pct}%)')
+            reply.body(f'💧 {greeting(user)}! {status_cheer()}\nToday: {total}/{goal}ml ({pct}%)')
             return str(resp)
 
         # Catch decimal-only inputs like .230 or 0.230 before parse_amount
@@ -302,8 +333,8 @@ def webhook():
 
         total = get_today_total(phone)
         pct = min(100, int(total / goal * 100))
-        extra = ' 🎉 Goal reached!' if total >= goal else ''
-        reply.body(f'✅ Logged {amount}ml. Today: {total}/{goal}ml ({pct}%){extra}')
+        extra = f'\n🎉 {greeting(user)}! Goal reached today!' if total >= goal else ''
+        reply.body(f'✅ {greeting(user)}! {log_cheer()}\nLogged {amount}ml. Today: {total}/{goal}ml ({pct}%){extra}')
 
     except Exception:
         logger.exception('Webhook error for %s', phone)
