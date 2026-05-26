@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+import requests as http_requests
 from flask import Flask, request, jsonify
 from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client as TwilioClient
@@ -24,6 +25,10 @@ TWILIO_WHATSAPP_NUMBER = os.environ.get('TWILIO_WHATSAPP_NUMBER', '')
 DAILY_GOAL_ML = int(os.environ.get('DAILY_GOAL_ML', '2000'))
 ADMIN_PHONE = os.environ.get('ADMIN_PHONE', '')
 ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', '')
+
+META_VERIFY_TOKEN = os.environ.get('META_VERIFY_TOKEN', '')
+META_ACCESS_TOKEN = os.environ.get('META_ACCESS_TOKEN', '')
+META_PHONE_NUMBER_ID = os.environ.get('META_PHONE_NUMBER_ID', '')
 
 missing = [k for k, v in {
     'SUPABASE_URL': SUPABASE_URL, 'SUPABASE_KEY': SUPABASE_KEY,
@@ -230,6 +235,21 @@ def send_whatsapp(to: str, body: str) -> None:
     twilio_client.messages.create(body=body, from_=from_, to=to)
 
 
+def send_meta_whatsapp(to: str, body: str) -> None:
+    to = to.lstrip('+')
+    http_requests.post(
+        f'https://graph.facebook.com/v19.0/{META_PHONE_NUMBER_ID}/messages',
+        headers={'Authorization': f'Bearer {META_ACCESS_TOKEN}'},
+        json={
+            'messaging_product': 'whatsapp',
+            'to': to,
+            'type': 'text',
+            'text': {'body': body},
+        },
+        timeout=10,
+    ).raise_for_status()
+
+
 def welcome_message(user: dict) -> str:
     goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
     return (
@@ -342,6 +362,62 @@ def add_user():
         return jsonify({'status': 'ok', 'welcome_sent': False, 'error': str(exc)}), 207
 
 
+def process_message(phone: str, body: str) -> str:
+    """Core message logic — shared by Twilio and Meta webhooks. Returns the reply text."""
+    user, is_new = get_or_create_user(phone)
+    goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
+    cmd = body.lower()
+
+    if is_new:
+        return welcome_message(user)
+
+    if any(word in cmd for word in ['thank', 'thanks', 'ty', 'thx', '🙏', '😊', '❤️', '🥰', '😍', 'love']):
+        replies = [
+            f'Aww, {greeting(user)}! 🥰 You are so welcome! Keep drinking water!',
+            f'Of course, {greeting(user)}! 💧 That is what I am here for! Stay hydrated!',
+            f'{greeting(user)}, you are too sweet! 🌸 Now go drink some water!',
+            f'Always, {greeting(user)}! 🥰 Your health is everything!',
+        ]
+        day = datetime.now(IST).timetuple().tm_yday
+        return replies[day % len(replies)]
+
+    if cmd == 'help':
+        return (
+            '💧 *Hydration Tracker*\n\n'
+            'Log water by sending:\n'
+            '• `250` or `250ml`\n'
+            '• `1 glass` (= 250ml)\n'
+            '• `1 bottle` (= 500ml)\n'
+            '• `1 cup` (= 150ml)\n'
+            '• `1 litre` or `1.5 litres`\n\n'
+            "Send `status` to check today's total."
+        )
+
+    if cmd == 'status':
+        total = get_today_total(phone)
+        pct = min(100, int(total / goal * 100))
+        return f'💧 {greeting(user)}! {status_cheer()}\nToday: {total}/{goal}ml ({pct}%)'
+
+    suggestion = decimal_suggestion(body)
+    if suggestion is not None:
+        return f'🤔 Did you mean *{suggestion}ml*? Send `{suggestion}` to log it.'
+
+    amount = parse_amount(body)
+    if amount is None:
+        return "❓ Couldn't understand that. Send `help` for instructions."
+
+    supabase.table('hydration_logs').insert({
+        'user_phone': phone,
+        'amount_ml': amount,
+        'logged_at': datetime.now(IST).isoformat(),
+    }).execute()
+
+    total = get_today_total(phone)
+    pct = min(100, int(total / goal * 100))
+    extra = f'\n🎉 {greeting(user)}! Goal reached today!' if total >= goal else ''
+    return f'✅ {greeting(user)}! {log_cheer()}\nLogged {amount}ml. Today: {total}/{goal}ml ({pct}%){extra}'
+
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     from_number = request.form.get('From', '')
@@ -350,73 +426,39 @@ def webhook():
 
     resp = MessagingResponse()
     reply = resp.message()
-
     try:
-        user, is_new = get_or_create_user(phone)
-        goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
-        cmd = body.lower()
-
-        if is_new:
-            reply.body(welcome_message(user))
-            return str(resp)
-
-        if any(word in cmd for word in ['thank', 'thanks', 'ty', 'thx', '🙏', '😊', '❤️', '🥰', '😍', 'love']):
-            replies = [
-                f'Aww, {greeting(user)}! 🥰 You are so welcome! Keep drinking water!',
-                f'Of course, {greeting(user)}! 💧 That is what I am here for! Stay hydrated!',
-                f'{greeting(user)}, you are too sweet! 🌸 Now go drink some water!',
-                f'Always, {greeting(user)}! 🥰 Your health is everything!',
-            ]
-            day = datetime.now(IST).timetuple().tm_yday
-            reply.body(replies[day % len(replies)])
-            return str(resp)
-
-        if cmd == 'help':
-            reply.body(
-                '💧 *Hydration Tracker*\n\n'
-                'Log water by sending:\n'
-                '• `250` or `250ml`\n'
-                '• `1 glass` (= 250ml)\n'
-                '• `1 bottle` (= 500ml)\n'
-                '• `1 cup` (= 150ml)\n'
-                '• `1 litre` or `1.5 litres`\n\n'
-                "Send `status` to check today's total."
-            )
-            return str(resp)
-
-        if cmd == 'status':
-            total = get_today_total(phone)
-            pct = min(100, int(total / goal * 100))
-            reply.body(f'💧 {greeting(user)}! {status_cheer()}\nToday: {total}/{goal}ml ({pct}%)')
-            return str(resp)
-
-        # Catch decimal-only inputs like .230 or 0.230 before parse_amount
-        suggestion = decimal_suggestion(body)
-        if suggestion is not None:
-            reply.body(f'🤔 Did you mean *{suggestion}ml*? Send `{suggestion}` to log it.')
-            return str(resp)
-
-        amount = parse_amount(body)
-        if amount is None:
-            reply.body("❓ Couldn't understand that. Send `help` for instructions.")
-            return str(resp)
-
-        supabase.table('hydration_logs').insert({
-            'user_phone': phone,
-            'amount_ml': amount,
-            'logged_at': datetime.now(IST).isoformat(),
-        }).execute()
-
-        total = get_today_total(phone)
-        pct = min(100, int(total / goal * 100))
-        extra = f'\n🎉 {greeting(user)}! Goal reached today!' if total >= goal else ''
-        reply.body(f'✅ {greeting(user)}! {log_cheer()}\nLogged {amount}ml. Today: {total}/{goal}ml ({pct}%){extra}')
-
+        reply.body(process_message(phone, body))
     except Exception:
         logger.exception('Webhook error for %s', phone)
         reply.body('⚠️ Something went wrong. Please try again.')
-
     return str(resp)
+
+
+@app.route('/meta-webhook', methods=['GET'])
+def meta_webhook_verify():
+    if (request.args.get('hub.mode') == 'subscribe'
+            and request.args.get('hub.verify_token') == META_VERIFY_TOKEN):
+        return request.args.get('hub.challenge'), 200
+    return 'Forbidden', 403
+
+
+@app.route('/meta-webhook', methods=['POST'])
+def meta_webhook():
+    data = request.get_json(silent=True) or {}
+    try:
+        for entry in data.get('entry', []):
+            for change in entry.get('changes', []):
+                value = change.get('value', {})
+                for msg in value.get('messages', []):
+                    if msg.get('type') != 'text':
+                        continue
+                    phone = '+' + msg['from']
+                    body = msg.get('text', {}).get('body', '').strip()
+                    reply_text = process_message(phone, body)
+                    send_meta_whatsapp(phone, reply_text)
+    except Exception:
+        logger.exception('Meta webhook error')
+    return 'OK', 200
 
 
 @app.route('/health', methods=['GET'])
