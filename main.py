@@ -436,8 +436,10 @@ def webhook():
 
 @app.route('/meta-webhook', methods=['GET'])
 def meta_webhook_verify():
-    token = os.environ.get('META_VERIFY_TOKEN', META_VERIFY_TOKEN)
-    logger.info('Meta verify attempt — token_set=%s', bool(token))
+    token = os.environ.get('META_VERIFY_TOKEN') or 'hydration-tracker-meta'
+    logger.info('Meta verify attempt — token_set=%s incoming=%s',
+                bool(os.environ.get('META_VERIFY_TOKEN')),
+                request.args.get('hub.verify_token'))
     if (request.args.get('hub.mode') == 'subscribe'
             and request.args.get('hub.verify_token') == token):
         return request.args.get('hub.challenge'), 200
