@@ -466,6 +466,11 @@ def health():
     return {'status': 'ok'}
 
 
+@app.route('/debug-env', methods=['GET'])
+def debug_env():
+    return jsonify({'meta_verify_token_set': bool(META_VERIFY_TOKEN), 'meta_phone_id_set': bool(META_PHONE_NUMBER_ID), 'meta_access_token_set': bool(META_ACCESS_TOKEN)})
+
+
 # Use --workers 1 in Procfile to avoid duplicate scheduler jobs across gunicorn workers.
 scheduler = BackgroundScheduler(timezone=IST)
 scheduler.add_job(send_daily_summaries, 'cron', hour=20, minute=0)
