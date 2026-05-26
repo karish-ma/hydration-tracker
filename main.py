@@ -44,6 +44,15 @@ ADJECTIVES = [
     'Dearest', 'Wonderful', 'Lovely', 'Sweetest', 'Amazing',
     'Brilliant', 'Darling', 'Radiant', 'Cherished', 'Fabulous',
     'Dear', 'Precious', 'Sunshine', 'Delightful', 'Incredible',
+    'Glorious', 'Magnificent', 'Stellar', 'Beautiful', 'Superstar',
+    'Champion', 'Splendid', 'Phenomenal', 'Extraordinary', 'Spectacular',
+    'Beloved', 'Treasured', 'Outstanding', 'Remarkable', 'Dazzling',
+    'Vibrant', 'Sparkling', 'Shining', 'Blossoming', 'Unstoppable',
+    'Inspiring', 'Heroic', 'Courageous', 'Exceptional', 'Luminous',
+    'Joyful', 'Gracious', 'Warm', 'Gentle', 'Triumphant',
+    'Resilient', 'Determined', 'Tireless', 'Devoted', 'Golden',
+    'Radiant', 'Priceless', 'Braveheart', 'Bright', 'Wholesome',
+    'Magnetic', 'Serene', 'Boundless', 'Fearless', 'Heartwarming',
 ]
 
 LOG_CHEERS = [
@@ -57,30 +66,86 @@ LOG_CHEERS = [
     'One sip at a time — you have got this! 👏',
     'Fantastic! Your body thanks you! 🙏',
     'Brilliant effort! Stay hydrated, stay glowing! ✨',
+    'Your cells are doing a happy dance right now! 💃',
+    'That is what I am talking about! Keep it flowing! 🌊',
+    'Look at you go! Hydration hero! 🦸',
+    'Your future self is already thanking you! 🙏',
+    'Water logged! You are unstoppable! 🚀',
+    'Small steps, big results — proud of you! 🌱',
+    'Sip by sip, you are winning today! 🏆',
+    'Body fuelled, spirit lifted — that is the way! ☀️',
+    'You just made your kidneys very happy! 💧',
+    'Another one down! You are on fire! 🔥',
+    'Consistency is your superpower! Keep going! 💫',
+    'That sip just brought you one step closer to your goal! 🎯',
+    'Hydration game strong! Love to see it! 💪',
+    'Health is wealth, and you are investing wisely! 💰',
+    'A little water goes a long way — you are proof! 🌿',
+    'Your body is glowing from the inside out! ✨',
+    'Progress logged! You should be so proud! 🥹',
+    'That is the healthy habit we love to see! 🌸',
+    'Crushing it one sip at a time! 💥',
+    'Wonderful effort! Every drop counts! 🫧',
+    'That is pure self-love in a glass! 💙',
+    'You showed up for yourself today — that matters! 🌻',
+    'Hydrated and thriving — that is you! 🌿',
+    'Another sip, another step toward feeling great! 🚶',
+    'Your heart, skin, and energy all say thank you! 💛',
+    'This is what taking care of yourself looks like! 🫶',
+    'Water is medicine and you just took your dose! 💊',
+    'Sipping your way to a healthier you! 🌈',
+    'That is discipline and love in one gulp! 🏅',
+    'Your body deserves this and you delivered! 🎁',
+    'Quiet wins are still wins — well done! 🤫✨',
+    'You are building something beautiful, one sip at a time! 🏗️',
+    'Feeling good starts with exactly this! 🌞',
+    'Log after log — you are making it a habit! 🔁',
 ]
 
 STATUS_CHEERS = [
     'Here is your update! Keep drinking! 💧',
-    'How are you doing today? 🌊',
     'Stay on track, you are doing great! 💪',
     'Check in complete! Keep going! 🌟',
     'Every ml counts! 💦',
+    'Here is where you stand — you have got this! 🏁',
+    'Progress report incoming! 📊',
+    'Look how far you have come today! 🌈',
+    'Checking in on your hydration journey! 🗺️',
+    'Your body keeps the score — here is today\'s tally! 💧',
+    'Stay consistent, stay hydrated! 🌊',
+    'Here is your hydration snapshot for today! 📸',
+    'One sip at a time — here is where you are! 🎯',
+    'Proud of you for checking in! 🥹',
+    'Knowledge is power — here is your update! ⚡',
+    'You asked, I answered — here is your total! 📋',
+    'Checking in because you care — love that! 🫶',
+    'Here is your daily hydration report! 💧',
+    'Still going strong! Here is today so far! 💪',
+    'Every check-in is a sign you care — here you go! 🌟',
+    'You are paying attention to your health — that is everything! 🫀',
+    'Real-time hydration report, just for you! 📡',
+    'Here is the honest truth of today so far! 🪞',
+    'Numbers do not lie — here is where you are! 📈',
+    'Your dedication brought you here to check — love it! 🙌',
 ]
 
 
+def _pick(lst: list, extra: int = 0) -> str:
+    now = datetime.now(IST)
+    idx = (now.timetuple().tm_yday * 24 + now.hour + extra) % len(lst)
+    return lst[idx]
+
+
 def daily_adjective() -> str:
-    day = datetime.now(IST).timetuple().tm_yday
-    return ADJECTIVES[day % len(ADJECTIVES)]
+    return _pick(ADJECTIVES)
 
 
 def log_cheer() -> str:
-    day = datetime.now(IST).timetuple().tm_yday
-    return LOG_CHEERS[day % len(LOG_CHEERS)]
+    return _pick(LOG_CHEERS)
 
 
 def status_cheer() -> str:
-    day = datetime.now(IST).timetuple().tm_yday
-    return STATUS_CHEERS[day % len(STATUS_CHEERS)]
+    return _pick(STATUS_CHEERS)
 
 
 def display_name(user: dict) -> str:
