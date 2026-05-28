@@ -26,9 +26,6 @@ DAILY_GOAL_ML = int(os.environ.get('DAILY_GOAL_ML', '2000'))
 ADMIN_PHONE = os.environ.get('ADMIN_PHONE', '')
 ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', '')
 
-META_VERIFY_TOKEN = os.environ.get('META_VERIFY_TOKEN', '')
-META_ACCESS_TOKEN = os.environ.get('META_ACCESS_TOKEN', '')
-META_PHONE_NUMBER_ID = os.environ.get('META_PHONE_NUMBER_ID', '')
 
 missing = [k for k, v in {
     'SUPABASE_URL': SUPABASE_URL, 'SUPABASE_KEY': SUPABASE_KEY,
@@ -50,6 +47,11 @@ def get_setting(key: str, fallback: str = '') -> str:
         return row.data['value'].strip() if row.data else fallback
     except Exception:
         return fallback
+
+
+META_VERIFY_TOKEN = get_setting('META_VERIFY_TOKEN')
+META_ACCESS_TOKEN = get_setting('META_ACCESS_TOKEN')
+META_PHONE_NUMBER_ID = get_setting('META_PHONE_NUMBER_ID')
 
 app = Flask(__name__)
 
@@ -245,8 +247,8 @@ def send_whatsapp(to: str, body: str) -> None:
 
 def send_meta_whatsapp(to: str, body: str) -> None:
     to = to.lstrip('+')
-    phone_number_id = os.environ.get('META_PHONE_NUMBER_ID') or META_PHONE_NUMBER_ID or '1078382302033526'
-    access_token = os.environ.get('META_ACCESS_TOKEN') or META_ACCESS_TOKEN or get_setting('META_ACCESS_TOKEN')
+    phone_number_id = META_PHONE_NUMBER_ID
+    access_token = META_ACCESS_TOKEN
     http_requests.post(
         f'https://graph.facebook.com/v19.0/{phone_number_id}/messages',
         headers={'Authorization': f'Bearer {access_token}'},
@@ -446,12 +448,8 @@ def webhook():
 
 @app.route('/meta-webhook', methods=['GET'])
 def meta_webhook_verify():
-    token = os.environ.get('META_VERIFY_TOKEN') or 'hydration-tracker-meta'
-    logger.info('Meta verify attempt — token_set=%s incoming=%s',
-                bool(os.environ.get('META_VERIFY_TOKEN')),
-                request.args.get('hub.verify_token'))
     if (request.args.get('hub.mode') == 'subscribe'
-            and request.args.get('hub.verify_token') == token):
+            and request.args.get('hub.verify_token') == META_VERIFY_TOKEN):
         return request.args.get('hub.challenge'), 200
     return 'Forbidden', 403
 
