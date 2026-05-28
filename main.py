@@ -182,7 +182,7 @@ def parse_amount(text: str) -> 'int | None':
     if m:
         return max(1, int(float(m.group(1)) * 500))
 
-    m = re.match(r'^(\d+(?:\.\d+)?)\s*glasses?$', t)
+    m = re.match(r'^(\d+(?:\.\d+)?)\s*glass(?:es)?$', t)
     if m:
         return max(1, int(float(m.group(1)) * 250))
 
