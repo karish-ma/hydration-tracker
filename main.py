@@ -47,7 +47,7 @@ twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 def get_setting(key: str, fallback: str = '') -> str:
     try:
         row = supabase.table('settings').select('value').eq('key', key).single().execute()
-        return row.data['value'] if row.data else fallback
+        return row.data['value'].strip() if row.data else fallback
     except Exception:
         return fallback
 
