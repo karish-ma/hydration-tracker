@@ -43,6 +43,14 @@ IST = ZoneInfo('Asia/Kolkata')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
+
+def get_setting(key: str, fallback: str = '') -> str:
+    try:
+        row = supabase.table('settings').select('value').eq('key', key).single().execute()
+        return row.data['value'] if row.data else fallback
+    except Exception:
+        return fallback
+
 app = Flask(__name__)
 
 ADJECTIVES = [
@@ -238,7 +246,7 @@ def send_whatsapp(to: str, body: str) -> None:
 def send_meta_whatsapp(to: str, body: str) -> None:
     to = to.lstrip('+')
     phone_number_id = os.environ.get('META_PHONE_NUMBER_ID') or META_PHONE_NUMBER_ID or '1078382302033526'
-    access_token = os.environ.get('META_ACCESS_TOKEN') or META_ACCESS_TOKEN
+    access_token = os.environ.get('META_ACCESS_TOKEN') or META_ACCESS_TOKEN or get_setting('META_ACCESS_TOKEN')
     http_requests.post(
         f'https://graph.facebook.com/v19.0/{phone_number_id}/messages',
         headers={'Authorization': f'Bearer {access_token}'},
