@@ -192,6 +192,10 @@ def parse_amount(text: str) -> 'int | None':
     if m:
         return max(1, int(float(m.group(1)) * 150))
 
+    m = re.match(r'^(\d+(?:\.\d+)?)\s*(?:oz|ounces?|fl\.?\s*oz)$', t)
+    if m:
+        return max(1, int(float(m.group(1)) * 29.57))
+
     # Plain number or with ml: "250", "250ml", "250 ml"
     m = re.match(r'^(\d+(?:\.\d+)?)\s*(?:ml|mls)?$', t)
     if m:
@@ -433,7 +437,8 @@ def process_message(phone: str, body: str) -> str:
             '• `1 glass` (= 250ml)\n'
             '• `1 bottle` (= 500ml)\n'
             '• `1 cup` (= 150ml)\n'
-            '• `1 litre` or `1.5 litres`\n\n'
+            '• `1 litre` or `1.5 litres`\n'
+            '• `8 oz` or `8 ounces` (= ~237ml)\n\n'
             "Send `status` to check today's total."
         )
 
