@@ -262,6 +262,28 @@ def send_meta_whatsapp(to: str, body: str) -> None:
     ).raise_for_status()
 
 
+def send_meta_whatsapp_template(to: str, template_name: str, params: list) -> None:
+    to = to.lstrip('+')
+    http_requests.post(
+        f'https://graph.facebook.com/v19.0/{META_PHONE_NUMBER_ID}/messages',
+        headers={'Authorization': f'Bearer {META_ACCESS_TOKEN}'},
+        json={
+            'messaging_product': 'whatsapp',
+            'to': to,
+            'type': 'template',
+            'template': {
+                'name': template_name,
+                'language': {'code': 'en'},
+                'components': [{
+                    'type': 'body',
+                    'parameters': [{'type': 'text', 'text': str(p)} for p in params],
+                }],
+            },
+        },
+        timeout=10,
+    ).raise_for_status()
+
+
 def welcome_message(user: dict) -> str:
     goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
     return (
@@ -286,17 +308,22 @@ def send_daily_summaries() -> None:
         goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
         total = get_today_total(phone)
         pct = min(100, int(total / goal * 100))
-        bar = '█' * (pct // 10) + '░' * (10 - pct // 10)
         status = '🎉 Goal reached!' if total >= goal else f'Still need {goal - total}ml'
-        msg = (
-            f'💧 *Daily Summary — {today_str}*\n'
-            f'{greeting(user)}!\n\n'
-            f'{bar} {pct}%\n'
-            f'Drank: *{total}ml* / {goal}ml\n'
-            f'{status}'
-        )
         try:
-            send_whatsapp(phone, msg)
+            if META_PHONE_NUMBER_ID:
+                send_meta_whatsapp_template(phone, 'daily_hydration_summary', [
+                    today_str, f'{total}ml', f'{goal}ml', status,
+                ])
+            else:
+                bar = '█' * (pct // 10) + '░' * (10 - pct // 10)
+                msg = (
+                    f'💧 *Daily Summary — {today_str}*\n'
+                    f'{greeting(user)}!\n\n'
+                    f'{bar} {pct}%\n'
+                    f'Drank: *{total}ml* / {goal}ml\n'
+                    f'{status}'
+                )
+                send_whatsapp(phone, msg)
         except Exception as exc:
             logger.error('Failed summary for %s: %s', phone, exc)
         family_lines.append(f'• {display_name(user)}: {total}/{goal}ml ({pct}%)')
@@ -318,13 +345,18 @@ def send_nudges() -> None:
         if total >= goal * 0.4:
             continue
         remaining = goal - total
-        msg = (
-            f'💧 Hey {greeting(user)}! Quick check-in —\n'
-            f'You\'ve had *{total}ml* so far today.\n'
-            f'Just *{remaining}ml* more to hit your goal. You\'ve got this! 💪'
-        )
         try:
-            send_whatsapp(phone, msg)
+            if META_PHONE_NUMBER_ID:
+                send_meta_whatsapp_template(phone, 'hydration_nudge', [
+                    greeting(user), f'{total}ml', f'{remaining}ml',
+                ])
+            else:
+                msg = (
+                    f'💧 Hey {greeting(user)}! Quick check-in —\n'
+                    f'You\'ve had *{total}ml* so far today.\n'
+                    f'Just *{remaining}ml* more to hit your goal. You\'ve got this! 💪'
+                )
+                send_whatsapp(phone, msg)
         except Exception as exc:
             logger.error('Failed nudge for %s: %s', phone, exc)
 
