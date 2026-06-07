@@ -515,6 +515,49 @@ def health():
     return {'status': 'ok'}
 
 
+@app.route('/privacy', methods=['GET'])
+def privacy():
+    return '''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Hydration Tracker</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 680px; margin: 60px auto; padding: 0 24px; color: #1e293b; line-height: 1.7; }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    h2 { font-size: 1.1rem; margin-top: 32px; }
+    p, li { font-size: 0.95rem; color: #334155; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>💧 Privacy Policy</h1>
+  <p><strong>Hydration Tracker</strong> &mdash; Last updated: June 2026</p>
+
+  <h2>What we collect</h2>
+  <p>When you message the Hydration Tracker on WhatsApp, we collect and store:</p>
+  <ul>
+    <li>Your WhatsApp phone number</li>
+    <li>The water intake amounts you log</li>
+    <li>Timestamps of your messages</li>
+  </ul>
+
+  <h2>How we use it</h2>
+  <p>Your data is used solely to track your daily water intake, send you progress summaries, and send hydration reminders. We do not use your data for advertising or share it with third parties.</p>
+
+  <h2>Data storage</h2>
+  <p>Data is stored securely in Supabase (PostgreSQL). We do not sell or share your personal data.</p>
+
+  <h2>Deleting your data</h2>
+  <p>To delete your data, send <strong>delete my data</strong> via WhatsApp or contact us at karishma.mhapadi@gmail.com.</p>
+
+  <h2>Contact</h2>
+  <p>Questions? Email <a href="mailto:karishma.mhapadi@gmail.com">karishma.mhapadi@gmail.com</a></p>
+</body>
+</html>''', 200, {'Content-Type': 'text/html'}
+
+
 # Use --workers 1 in Procfile to avoid duplicate scheduler jobs across gunicorn workers.
 scheduler = BackgroundScheduler(timezone=IST)
 scheduler.add_job(send_daily_summaries, 'cron', hour=20, minute=0)
