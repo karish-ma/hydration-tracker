@@ -55,6 +55,11 @@ META_PHONE_NUMBER_ID = get_setting('META_PHONE_NUMBER_ID')
 
 app = Flask(__name__)
 
+
+@app.before_request
+def log_incoming():
+    logger.info('Incoming %s %s from %s', request.method, request.path, request.remote_addr)
+
 ADJECTIVES = [
     'Dearest', 'Wonderful', 'Lovely', 'Sweetest', 'Amazing',
     'Brilliant', 'Darling', 'Radiant', 'Cherished', 'Fabulous',
