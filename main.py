@@ -442,7 +442,7 @@ def send_daily_summaries() -> None:
         status = '🎉 Goal reached!' if total >= goal else f'Still need {goal - total}ml'
         try:
             if META_PHONE_NUMBER_ID:
-                send_meta_whatsapp_template(phone, 'daily_hydration_summary', [
+                send_meta_whatsapp_template(phone, 'hydration_summary', [
                     today_str, f'{total}ml', f'{goal}ml', status,
                 ])
             else:
@@ -478,7 +478,7 @@ def send_nudges() -> None:
         remaining = goal - total
         try:
             if META_PHONE_NUMBER_ID:
-                send_meta_whatsapp_template(phone, 'hydration_nudge', [
+                send_meta_whatsapp_template(phone, 'summary', [
                     greeting(user), f'{total}ml', f'{remaining}ml',
                 ])
             else:
