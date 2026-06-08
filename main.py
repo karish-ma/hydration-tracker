@@ -253,7 +253,7 @@ def send_meta_whatsapp(to: str, body: str) -> None:
     to = to.lstrip('+')
     phone_number_id = META_PHONE_NUMBER_ID
     access_token = META_ACCESS_TOKEN
-    http_requests.post(
+    resp = http_requests.post(
         f'https://graph.facebook.com/v19.0/{phone_number_id}/messages',
         headers={'Authorization': f'Bearer {access_token}'},
         json={
@@ -263,7 +263,9 @@ def send_meta_whatsapp(to: str, body: str) -> None:
             'text': {'body': body},
         },
         timeout=10,
-    ).raise_for_status()
+    )
+    logger.info('Meta send_whatsapp to=%s status=%s body=%s', to, resp.status_code, resp.text[:300])
+    resp.raise_for_status()
 
 
 def send_meta_whatsapp_template(to: str, template_name: str, params: list) -> None:
