@@ -52,6 +52,25 @@ def get_setting(key: str, fallback: str = '') -> str:
 META_VERIFY_TOKEN = get_setting('META_VERIFY_TOKEN')
 META_ACCESS_TOKEN = get_setting('META_ACCESS_TOKEN')
 META_PHONE_NUMBER_ID = get_setting('META_PHONE_NUMBER_ID')
+META_WABA_ID = get_setting('META_WABA_ID')
+
+
+def subscribe_waba():
+    if not META_WABA_ID or not META_ACCESS_TOKEN:
+        logger.warning('Skipping WABA subscription: META_WABA_ID or META_ACCESS_TOKEN missing')
+        return
+    try:
+        resp = http_requests.post(
+            f'https://graph.facebook.com/v19.0/{META_WABA_ID}/subscribed_apps',
+            headers={'Authorization': f'Bearer {META_ACCESS_TOKEN}'},
+            timeout=10,
+        )
+        logger.info('WABA subscription: status=%s body=%s', resp.status_code, resp.text)
+    except Exception as exc:
+        logger.error('WABA subscription failed: %s', exc)
+
+
+subscribe_waba()
 
 app = Flask(__name__)
 
