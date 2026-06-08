@@ -445,6 +445,9 @@ def process_message(phone: str, body: str) -> str:
     if is_new:
         return welcome_message(user)
 
+    if any(word in cmd for word in ['hi', 'hello', 'hey', 'hii', 'helo', 'hola', 'namaste', 'start']):
+        return welcome_message(user)
+
     if any(word in cmd for word in ['thank', 'thanks', 'ty', 'thx', '🙏', '😊', '❤️', '🥰', '😍', 'love']):
         replies = [
             f'Aww, {greeting(user)}! 🥰 You are so welcome! Keep drinking water!',
