@@ -314,17 +314,118 @@ def send_meta_whatsapp_template(to: str, template_name: str, params: list) -> No
     ).raise_for_status()
 
 
+LANGUAGE_PICKER = (
+    '👋 Welcome! / स्वागत! / Willkommen!\n\n'
+    'Choose your language:\n'
+    '1. English\n'
+    '2. मराठी (Marathi)\n'
+    '3. Deutsch (German)'
+)
+
+LANGUAGE_CHOICES = {
+    '1': 'en', 'english': 'en',
+    '2': 'mr', 'marathi': 'mr', 'मराठी': 'mr',
+    '3': 'de', 'german': 'de', 'deutsch': 'de',
+}
+
+STRINGS = {
+    'en': {
+        'welcome': (
+            '💧 Hi {name}! Welcome to your Hydration Tracker!\n\n'
+            'Your daily goal is *{goal}ml*. Log water by sending:\n'
+            '• `250` or `250ml`\n'
+            '• `1 glass` (= 250ml)\n'
+            '• `1 bottle` (= 500ml)\n'
+            '• `1 litre`\n\n'
+            "Send `status` to check today's progress. Stay hydrated! 🌊"
+        ),
+        'help': (
+            '💧 *Hydration Tracker*\n\n'
+            'Log water by sending:\n'
+            '• `250` or `250ml`\n'
+            '• `1 glass` (= 250ml)\n'
+            '• `1 bottle` (= 500ml)\n'
+            '• `1 cup` (= 150ml)\n'
+            '• `1 litre` or `1.5 litres`\n'
+            '• `8 oz` or `8 ounces` (= ~237ml)\n\n'
+            "Send `status` to check today's total."
+        ),
+        'status': '💧 {name}! Today: {total}/{goal}ml ({pct}%)',
+        'logged': '✅ {name}! Logged {amount}ml. Today: {total}/{goal}ml ({pct}%)',
+        'goal_reached': '\n🎉 Goal reached today!',
+        'unknown': '❓ Couldn\'t understand that. Send `help` for instructions.',
+        'decimal': '🤔 Did you mean *{suggestion}ml*? Send `{suggestion}` to log it.',
+        'language_set': '✅ Language set to English!',
+        'thankyou': '😊 You\'re welcome! Keep drinking water! 💧',
+    },
+    'mr': {
+        'welcome': (
+            '💧 नमस्कार {name}! तुमच्या हायड्रेशन ट्रॅकरमध्ये स्वागत आहे!\n\n'
+            'तुमचे दैनिक लक्ष्य *{goal}ml* आहे. पाणी नोंदवण्यासाठी पाठवा:\n'
+            '• `250` किंवा `250ml`\n'
+            '• `1 ग्लास` (= 250ml)\n'
+            '• `1 बाटली` (= 500ml)\n'
+            '• `1 लिटर`\n\n'
+            'आजची प्रगती पाहण्यासाठी `status` पाठवा. हायड्रेटेड राहा! 🌊'
+        ),
+        'help': (
+            '💧 *हायड्रेशन ट्रॅकर*\n\n'
+            'पाणी नोंदवण्यासाठी पाठवा:\n'
+            '• `250` किंवा `250ml`\n'
+            '• `1 ग्लास` (= 250ml)\n'
+            '• `1 बाटली` (= 500ml)\n'
+            '• `1 कप` (= 150ml)\n'
+            '• `1 लिटर`\n\n'
+            'आजचे एकूण पाहण्यासाठी `status` पाठवा.'
+        ),
+        'status': '💧 {name}! आज: {total}/{goal}ml ({pct}%)',
+        'logged': '✅ {name}! {amount}ml नोंदवले. आज: {total}/{goal}ml ({pct}%)',
+        'goal_reached': '\n🎉 आजचे लक्ष्य पूर्ण झाले!',
+        'unknown': '❓ समजले नाही. सूचनांसाठी `help` पाठवा.',
+        'decimal': '🤔 तुम्हाला *{suggestion}ml* म्हणायचे आहे का? नोंदवण्यासाठी `{suggestion}` पाठवा.',
+        'language_set': '✅ भाषा मराठी सेट केली!',
+        'thankyou': '😊 आपले स्वागत आहे! पाणी पीत राहा! 💧',
+    },
+    'de': {
+        'welcome': (
+            '💧 Hallo {name}! Willkommen bei deinem Hydrations-Tracker!\n\n'
+            'Dein tägliches Ziel ist *{goal}ml*. Wasser eintragen:\n'
+            '• `250` oder `250ml`\n'
+            '• `1 Glas` (= 250ml)\n'
+            '• `1 Flasche` (= 500ml)\n'
+            '• `1 Liter`\n\n'
+            'Sende `status` für deinen heutigen Fortschritt. Bleib hydratisiert! 🌊'
+        ),
+        'help': (
+            '💧 *Hydrations-Tracker*\n\n'
+            'Wasser eintragen:\n'
+            '• `250` oder `250ml`\n'
+            '• `1 Glas` (= 250ml)\n'
+            '• `1 Flasche` (= 500ml)\n'
+            '• `1 Tasse` (= 150ml)\n'
+            '• `1 Liter`\n\n'
+            'Sende `status` für dein heutiges Ergebnis.'
+        ),
+        'status': '💧 {name}! Heute: {total}/{goal}ml ({pct}%)',
+        'logged': '✅ {name}! {amount}ml eingetragen. Heute: {total}/{goal}ml ({pct}%)',
+        'goal_reached': '\n🎉 Tagesziel heute erreicht!',
+        'unknown': '❓ Das habe ich nicht verstanden. Sende `help` für Anweisungen.',
+        'decimal': '🤔 Meintest du *{suggestion}ml*? Sende `{suggestion}` zum Eintragen.',
+        'language_set': '✅ Sprache auf Deutsch gesetzt!',
+        'thankyou': '😊 Gern geschehen! Trink weiter Wasser! 💧',
+    },
+}
+
+
+def t(lang: str, key: str, **kwargs) -> str:
+    s = STRINGS.get(lang, STRINGS['en']).get(key, STRINGS['en'][key])
+    return s.format(**kwargs) if kwargs else s
+
+
 def welcome_message(user: dict) -> str:
+    lang = user.get('language') or 'en'
     goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
-    return (
-        f'💧 Hi {greeting(user)}! Welcome to your Hydration Tracker!\n\n'
-        f'Your daily goal is *{goal}ml*. Log water by sending:\n'
-        '• `250` or `250ml`\n'
-        '• `1 glass` (= 250ml)\n'
-        '• `1 bottle` (= 500ml)\n'
-        '• `1 litre`\n\n'
-        "Send `status` to check today's progress. Stay hydrated! 🌊"
-    )
+    return t(lang, 'welcome', name=greeting(user), goal=goal)
 
 
 def send_daily_summaries() -> None:
@@ -440,49 +541,46 @@ def process_message(phone: str, body: str) -> str:
     """Core message logic — shared by Twilio and Meta webhooks. Returns the reply text."""
     user, is_new = get_or_create_user(phone)
     goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
-    cmd = body.lower()
+    lang = user.get('language')
+    cmd = body.lower().strip()
 
-    if is_new:
+    # No language set yet — show picker or detect choice
+    if not lang:
+        choice = LANGUAGE_CHOICES.get(cmd)
+        if choice:
+            supabase.table('users').update({'language': choice}).eq('phone', phone).execute()
+            user['language'] = choice
+            return welcome_message(user)
+        return LANGUAGE_PICKER
+
+    # Language change command
+    if cmd == 'language':
+        supabase.table('users').update({'language': None}).eq('phone', phone).execute()
+        return LANGUAGE_PICKER
+
+    # Greetings — show welcome/instructions
+    if is_new or any(w in cmd for w in ['hi', 'hello', 'hey', 'hii', 'helo', 'hola', 'namaste', 'start']):
         return welcome_message(user)
 
-    if any(word in cmd for word in ['hi', 'hello', 'hey', 'hii', 'helo', 'hola', 'namaste', 'start']):
-        return welcome_message(user)
-
-    if any(word in cmd for word in ['thank', 'thanks', 'ty', 'thx', '🙏', '😊', '❤️', '🥰', '😍', 'love']):
-        replies = [
-            f'Aww, {greeting(user)}! 🥰 You are so welcome! Keep drinking water!',
-            f'Of course, {greeting(user)}! 💧 That is what I am here for! Stay hydrated!',
-            f'{greeting(user)}, you are too sweet! 🌸 Now go drink some water!',
-            f'Always, {greeting(user)}! 🥰 Your health is everything!',
-        ]
-        day = datetime.now(IST).timetuple().tm_yday
-        return replies[day % len(replies)]
+    # Thank you
+    if any(w in cmd for w in ['thank', 'thanks', 'ty', 'thx', '🙏', '😊', '❤️', '🥰', '😍', 'love']):
+        return t(lang, 'thankyou')
 
     if cmd == 'help':
-        return (
-            '💧 *Hydration Tracker*\n\n'
-            'Log water by sending:\n'
-            '• `250` or `250ml`\n'
-            '• `1 glass` (= 250ml)\n'
-            '• `1 bottle` (= 500ml)\n'
-            '• `1 cup` (= 150ml)\n'
-            '• `1 litre` or `1.5 litres`\n'
-            '• `8 oz` or `8 ounces` (= ~237ml)\n\n'
-            "Send `status` to check today's total."
-        )
+        return t(lang, 'help')
 
     if cmd == 'status':
         total = get_today_total(phone)
         pct = min(100, int(total / goal * 100))
-        return f'💧 {greeting(user)}! {status_cheer()}\nToday: {total}/{goal}ml ({pct}%)'
+        return t(lang, 'status', name=greeting(user), total=total, goal=goal, pct=pct)
 
     suggestion = decimal_suggestion(body)
     if suggestion is not None:
-        return f'🤔 Did you mean *{suggestion}ml*? Send `{suggestion}` to log it.'
+        return t(lang, 'decimal', suggestion=suggestion)
 
     amount = parse_amount(body)
     if amount is None:
-        return "❓ Couldn't understand that. Send `help` for instructions."
+        return t(lang, 'unknown')
 
     supabase.table('hydration_logs').insert({
         'user_phone': phone,
@@ -492,8 +590,8 @@ def process_message(phone: str, body: str) -> str:
 
     total = get_today_total(phone)
     pct = min(100, int(total / goal * 100))
-    extra = f'\n🎉 {greeting(user)}! Goal reached today!' if total >= goal else ''
-    return f'✅ {greeting(user)}! {log_cheer()}\nLogged {amount}ml. Today: {total}/{goal}ml ({pct}%){extra}'
+    extra = t(lang, 'goal_reached') if total >= goal else ''
+    return t(lang, 'logged', name=greeting(user), amount=amount, total=total, goal=goal, pct=pct) + extra
 
 
 @app.route('/webhook', methods=['POST'])
