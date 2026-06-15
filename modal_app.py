@@ -22,7 +22,7 @@ def run_nudges():
     send_nudges()
 
 
-@app.function(image=image, secrets=secrets, keep_warm=1)
+@app.function(image=image, secrets=secrets, min_containers=1)
 @modal.wsgi_app()
 def web():
     return flask_app
