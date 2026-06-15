@@ -69,3 +69,31 @@ def test_motivation_phrase_unknown_lang_falls_back_to_english():
     pool = main.STRINGS['en']['motivation'][1]
     result = main.motivation_phrase('xx', 50)
     assert result in pool
+
+
+def test_greeting_named_user():
+    user = {'name': 'Aai', 'nick_name': None}
+    assert main.greeting(user) == 'Aai'
+
+
+def test_greeting_nicknamed_user():
+    user = {'name': 'Karishma', 'nick_name': 'Aai'}
+    assert main.greeting(user) == 'Aai'
+
+
+def test_greeting_no_name():
+    user = {'name': '', 'nick_name': None}
+    assert main.greeting(user) == ''
+
+
+def test_welcome_message_named_user():
+    user = {'name': 'Aai', 'nick_name': None, 'language': 'en', 'daily_goal_ml': 2000}
+    msg = main.welcome_message(user)
+    assert 'Hi Aai!' in msg
+
+
+def test_welcome_message_unnamed_user():
+    user = {'name': '', 'nick_name': None, 'language': 'en', 'daily_goal_ml': 2000}
+    msg = main.welcome_message(user)
+    assert 'Hi!' in msg
+    assert 'Hi !' not in msg

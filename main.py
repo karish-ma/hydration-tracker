@@ -212,8 +212,7 @@ def motivation_phrase(lang: str, pct: int) -> str:
 
 
 def greeting(user: dict) -> str:
-    """Returns e.g. 'Lovely Aai' or 'Dear Riya'."""
-    return f'{daily_adjective()} {display_name(user)}'
+    return display_name(user)
 
 
 def parse_amount(text: str) -> 'int | None':
@@ -350,7 +349,7 @@ LANGUAGE_CHOICES = {
 STRINGS = {
     'en': {
         'welcome': (
-            '💧 Hi {name}! Welcome to your Hydration Tracker!\n\n'
+            '💧 Hi{name}! Welcome to your Hydration Tracker!\n\n'
             'Your daily goal is *{goal}ml*. Log water by sending:\n'
             '• `250` or `250ml`\n'
             '• `1 glass` (= 250ml)\n'
@@ -409,7 +408,7 @@ STRINGS = {
     },
     'mr': {
         'welcome': (
-            '💧 नमस्कार {name}! तुमच्या हायड्रेशन ट्रॅकरमध्ये स्वागत आहे!\n\n'
+            '💧 नमस्कार{name}! तुमच्या हायड्रेशन ट्रॅकरमध्ये स्वागत आहे!\n\n'
             'तुमचे दैनिक लक्ष्य *{goal}ml* आहे. पाणी नोंदवण्यासाठी पाठवा:\n'
             '• `250` किंवा `250ml`\n'
             '• `1 ग्लास` (= 250ml)\n'
@@ -467,7 +466,7 @@ STRINGS = {
     },
     'de': {
         'welcome': (
-            '💧 Hallo {name}! Willkommen bei deinem Hydrations-Tracker!\n\n'
+            '💧 Hallo{name}! Willkommen bei deinem Hydrations-Tracker!\n\n'
             'Dein tägliches Ziel ist *{goal}ml*. Wasser eintragen:\n'
             '• `250` oder `250ml`\n'
             '• `1 Glas` (= 250ml)\n'
@@ -534,7 +533,9 @@ def t(lang: str, key: str, **kwargs) -> str:
 def welcome_message(user: dict) -> str:
     lang = user.get('language') or 'en'
     goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
-    return t(lang, 'welcome', name=greeting(user), goal=goal)
+    name = greeting(user)
+    name_part = f' {name}' if name else ''
+    return t(lang, 'welcome', name=name_part, goal=goal)
 
 
 def send_daily_summaries() -> None:
