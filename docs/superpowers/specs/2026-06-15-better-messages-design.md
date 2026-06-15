@@ -52,44 +52,123 @@ Examples:
 
 ### Add: `motivation_phrase(lang, pct)`
 
+Each bracket has a pool of 5–6 phrases. One is picked randomly each time so successive messages feel varied and human.
+
 ```python
+import random
+
 def motivation_phrase(lang: str, pct: int) -> str:
-    phrases = STRINGS.get(lang, STRINGS['en'])['motivation']
-    if pct >= 100: return phrases[3]
-    if pct >= 75:  return phrases[2]
-    if pct >= 25:  return phrases[1]
-    return phrases[0]
+    pools = STRINGS.get(lang, STRINGS['en'])['motivation']
+    if pct >= 100: pool = pools[3]
+    elif pct >= 75: pool = pools[2]
+    elif pct >= 25: pool = pools[1]
+    else: pool = pools[0]
+    return random.choice(pool)
 ```
 
 ### Add: `'motivation'` key to each language in `STRINGS`
 
+Each bracket is a **list of 5–6 phrases**, not a single string. Phrases within a bracket are varied in tone and structure so they don't sound like the same sentence reworded.
+
 **English:**
 ```python
 'motivation': [
-    "Every sip counts — let's get started! 💧",
-    "You're building momentum — keep it up! 💪",
-    "Almost there — one last push! 🎯",
-    "Goal reached! You crushed it today! 🎉",
+    [  # 0–25% — gentle nudge to start
+        "The first sip is always the hardest. Take it! 💧",
+        "Every journey starts somewhere — yours starts now. 🌱",
+        "Small start, big finish. Let's go! 💧",
+        "Your body is waiting — give it some water! 🌊",
+        "No pressure, just a sip. You've got this. 💧",
+    ],
+    [  # 25–75% — building momentum
+        "You're making it happen — keep going! 💪",
+        "Look at you, already halfway there! 🌊",
+        "Solid progress. Don't stop now! ⚡",
+        "You're in the zone — stay consistent. 🎯",
+        "Good work so far. Keep the momentum! 💧",
+    ],
+    [  # 75–99% — almost there
+        "So close! Just a little more. 🎯",
+        "The finish line is right there — push through! 🏁",
+        "Almost done for today. You've got this! 💪",
+        "One last stretch — you're nearly there. 🌟",
+        "Don't stop now, you're almost at the goal! 🎉",
+    ],
+    [  # 100%+ — goal reached
+        "Goal reached! You did it today! 🎉",
+        "Full tank! Your body thanks you. 💙",
+        "You crushed your goal today. 🏆",
+        "100% done. That's what consistency looks like! 🌟",
+        "Hydration goal: complete. Legend status achieved. 💧🎉",
+    ],
 ]
 ```
 
 **Marathi:**
 ```python
 'motivation': [
-    "प्रत्येक घोट महत्त्वाचा आहे — सुरुवात करूया! 💧",
-    "तुम्ही चांगली प्रगती करत आहात — असेच चालू ठेवा! 💪",
-    "जवळजवळ पोहोचलात — शेवटचा प्रयत्न करा! 🎯",
-    "ध्येय पूर्ण! आज तुम्ही कमाल केली! 🎉",
+    [  # 0–25%
+        "पहिला घोट सर्वात कठीण असतो — घेऊन टाका! 💧",
+        "प्रत्येक प्रवास कुठेतरी सुरू होतो — आत्ता सुरू करा. 🌱",
+        "छोटी सुरुवात, मोठा शेवट. चला! 💧",
+        "तुमचं शरीर वाट पाहतंय — थोडं पाणी द्या! 🌊",
+        "एक छोटासा घोट घ्या — सुरुवात होईल! 💧",
+    ],
+    [  # 25–75%
+        "छान चालू आहे — असेच पुढे चला! 💪",
+        "बघा, आधीच अर्ध्यावर आलात! 🌊",
+        "चांगली प्रगती. थांबू नका! ⚡",
+        "तुम्ही लय पकडली आहे — सातत्य ठेवा. 🎯",
+        "आतापर्यंत उत्तम काम. वेग कायम ठेवा! 💧",
+    ],
+    [  # 75–99%
+        "इतके जवळ आलात! अजून थोडंसं. 🎯",
+        "ध्येय जवळ आहे — शेवटचा प्रयत्न करा! 🏁",
+        "आजचं काम जवळजवळ पूर्ण. तुम्ही करू शकता! 💪",
+        "थांबू नका, ध्येय दिसतंय! 🌟",
+        "शेवटची थोडी घोटं — पूर्ण करा! 🎉",
+    ],
+    [  # 100%+
+        "ध्येय पूर्ण! आज तुम्ही कमाल केली! 🎉",
+        "भरलेला टाकी! तुमचं शरीर आभारी आहे. 💙",
+        "आजचं लक्ष्य गाठलं. शाबास! 🏆",
+        "१००% झालं. हीच सातत्याची ताकद! 🌟",
+        "हायड्रेशन ध्येय: पूर्ण. आज खूप छान! 💧🎉",
+    ],
 ]
 ```
 
 **German:**
 ```python
 'motivation': [
-    "Jeder Schluck zählt — fang an! 💧",
-    "Du bist auf dem richtigen Weg — weiter so! 💪",
-    "Fast geschafft — noch ein letzter Schub! 🎯",
-    "Tagesziel erreicht! Großartige Leistung heute! 🎉",
+    [  # 0–25%
+        "Der erste Schluck ist immer der schwerste — trink ihn! 💧",
+        "Jede Reise beginnt irgendwo — deine beginnt jetzt. 🌱",
+        "Klein anfangen, groß enden. Los geht's! 💧",
+        "Dein Körper wartet — gib ihm etwas Wasser! 🌊",
+        "Kein Druck, nur ein Schluck. Du schaffst das. 💧",
+    ],
+    [  # 25–75%
+        "Du machst das super — weiter so! 💪",
+        "Schau mal, schon auf halbem Weg! 🌊",
+        "Gute Fortschritte. Nicht aufhören! ⚡",
+        "Du bist im Flow — bleib dran. 🎯",
+        "Bisher tolle Arbeit. Schwung beibehalten! 💧",
+    ],
+    [  # 75–99%
+        "So nah dran! Noch ein bisschen. 🎯",
+        "Die Ziellinie ist gleich da — durch! 🏁",
+        "Fast fertig für heute. Du schaffst das! 💪",
+        "Nicht aufhören, das Ziel ist in Sicht! 🌟",
+        "Noch ein paar Schlucke — du bist fast da! 🎉",
+    ],
+    [  # 100%+
+        "Tagesziel erreicht! Du hast es heute geschafft! 🎉",
+        "Voller Tank! Dein Körper dankt dir. 💙",
+        "Tagesziel geknackt. Gut gemacht! 🏆",
+        "100% geschafft. So sieht Konsequenz aus! 🌟",
+        "Hydrationsziel: erledigt. Heute war großartig! 💧🎉",
+    ],
 ]
 ```
 
