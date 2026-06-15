@@ -685,11 +685,9 @@ def privacy():
 </html>''', 200, {'Content-Type': 'text/html'}
 
 
-# Use --workers 1 in Procfile to avoid duplicate scheduler jobs across gunicorn workers.
-scheduler = BackgroundScheduler(timezone=IST)
-scheduler.add_job(send_daily_summaries, 'cron', hour=20, minute=0)
-scheduler.add_job(send_nudges, 'cron', hour=13, minute=0)
-scheduler.start()
-
 if __name__ == '__main__':
+    scheduler = BackgroundScheduler(timezone=IST)
+    scheduler.add_job(send_daily_summaries, 'cron', hour=20, minute=0)
+    scheduler.add_job(send_nudges, 'cron', hour=13, minute=0)
+    scheduler.start()
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
