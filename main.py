@@ -192,6 +192,11 @@ def display_name(user: dict) -> str:
     return (user.get('nick_name') or user.get('name') or '').strip()
 
 
+def progress_bar(pct: int) -> str:
+    filled = min(10, pct // 10)
+    return '█' * filled + '▒' * (10 - filled) + f' {pct}%'
+
+
 def greeting(user: dict) -> str:
     """Returns e.g. 'Lovely Aai' or 'Dear Riya'."""
     return f'{daily_adjective()} {display_name(user)}'
