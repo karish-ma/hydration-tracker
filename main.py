@@ -368,8 +368,8 @@ STRINGS = {
             '• `8 oz` or `8 ounces` (= ~237ml)\n\n'
             "Send `status` to check today's total."
         ),
-        'status': '💧 {name}! Today: {total}/{goal}ml ({pct}%)',
-        'logged': '✅ {name}! Logged {amount}ml. Today: {total}/{goal}ml ({pct}%)',
+        'status': '💧 {name}Today so far:\n{bar}\n{total}/{goal}ml',
+        'logged': '✅ {name}Logged {amount}ml. {motivation}\n{bar}\n{total}/{goal}ml',
         'goal_reached': '\n🎉 Goal reached today!',
         'unknown': '❓ Couldn\'t understand that. Send `help` for instructions.',
         'decimal': '🤔 Did you mean *{suggestion}ml*? Send `{suggestion}` to log it.',
@@ -426,8 +426,8 @@ STRINGS = {
             '• `1 लिटर`\n\n'
             'आजचे एकूण पाहण्यासाठी `status` पाठवा.'
         ),
-        'status': '💧 {name}! आज: {total}/{goal}ml ({pct}%)',
-        'logged': '✅ {name}! {amount}ml नोंदवले. आज: {total}/{goal}ml ({pct}%)',
+        'status': '💧 {name}आजची प्रगती:\n{bar}\n{total}/{goal}ml',
+        'logged': '✅ {name}{amount}ml नोंदवले. {motivation}\n{bar}\n{total}/{goal}ml',
         'goal_reached': '\n🎉 आजचे लक्ष्य पूर्ण झाले!',
         'unknown': '❓ समजले नाही. सूचनांसाठी `help` पाठवा.',
         'decimal': '🤔 तुम्हाला *{suggestion}ml* म्हणायचे आहे का? नोंदवण्यासाठी `{suggestion}` पाठवा.',
@@ -484,8 +484,8 @@ STRINGS = {
             '• `1 Liter`\n\n'
             'Sende `status` für dein heutiges Ergebnis.'
         ),
-        'status': '💧 {name}! Heute: {total}/{goal}ml ({pct}%)',
-        'logged': '✅ {name}! {amount}ml eingetragen. Heute: {total}/{goal}ml ({pct}%)',
+        'status': '💧 {name}Heute bisher:\n{bar}\n{total}/{goal}ml',
+        'logged': '✅ {name}{amount}ml eingetragen. {motivation}\n{bar}\n{total}/{goal}ml',
         'goal_reached': '\n🎉 Tagesziel heute erreicht!',
         'unknown': '❓ Das habe ich nicht verstanden. Sende `help` für Anweisungen.',
         'decimal': '🤔 Meintest du *{suggestion}ml*? Sende `{suggestion}` zum Eintragen.',
@@ -682,7 +682,9 @@ def process_message(phone: str, body: str) -> str:
     if cmd == 'status':
         total = get_today_total(phone)
         pct = min(100, int(total / goal * 100))
-        return t(lang, 'status', name=greeting(user), total=total, goal=goal, pct=pct)
+        name = greeting(user)
+        name_part = f'{name}! ' if name else ''
+        return t(lang, 'status', name=name_part, total=total, goal=goal, bar=progress_bar(pct), motivation=motivation_phrase(lang, pct))
 
     suggestion = decimal_suggestion(body)
     if suggestion is not None:
@@ -700,8 +702,9 @@ def process_message(phone: str, body: str) -> str:
 
     total = get_today_total(phone)
     pct = min(100, int(total / goal * 100))
-    extra = t(lang, 'goal_reached') if total >= goal else ''
-    return t(lang, 'logged', name=greeting(user), amount=amount, total=total, goal=goal, pct=pct) + extra
+    name = greeting(user)
+    name_part = f'{name}! ' if name else ''
+    return t(lang, 'logged', name=name_part, amount=amount, total=total, goal=goal, bar=progress_bar(pct), motivation=motivation_phrase(lang, pct))
 
 
 @app.route('/webhook', methods=['POST'])

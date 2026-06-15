@@ -97,3 +97,21 @@ def test_welcome_message_unnamed_user():
     msg = main.welcome_message(user)
     assert 'Hi!' in msg
     assert 'Hi !' not in msg
+
+
+def test_logged_template_has_bar_placeholder():
+    assert '{bar}' in main.STRINGS['en']['logged']
+    assert '{bar}' in main.STRINGS['mr']['logged']
+    assert '{bar}' in main.STRINGS['de']['logged']
+
+
+def test_logged_template_has_motivation_placeholder():
+    assert '{motivation}' in main.STRINGS['en']['logged']
+    assert '{motivation}' in main.STRINGS['mr']['logged']
+    assert '{motivation}' in main.STRINGS['de']['logged']
+
+
+def test_status_template_has_bar_placeholder():
+    assert '{bar}' in main.STRINGS['en']['status']
+    assert '{bar}' in main.STRINGS['mr']['status']
+    assert '{bar}' in main.STRINGS['de']['status']
