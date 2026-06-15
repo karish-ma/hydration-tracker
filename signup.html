@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Set up Hydration Tracker for your parents</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 64px;
+      color: #1e293b;
+    }
+
+    .hero {
+      text-align: center;
+      max-width: 520px;
+      margin-bottom: 36px;
+    }
+
+    .hero-icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .hero h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      font-size: 0.95rem;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 36px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 24px rgba(0,0,0,0.04);
+    }
+
+    .field {
+      margin-bottom: 22px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+      letter-spacing: 0.1px;
+    }
+
+    label .optional {
+      font-weight: 400;
+      color: #94a3b8;
+      margin-left: 4px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      color: #1e293b;
+      background: #f8fafc;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+      outline: none;
+      font-family: inherit;
+    }
+
+    input[type="text"]::placeholder,
+    input[type="email"]::placeholder,
+    input[type="tel"]::placeholder,
+    textarea::placeholder {
+      color: #94a3b8;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #60a5fa;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.15);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.55;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .divider {
+      height: 1px;
+      background: #f1f5f9;
+      margin: 28px 0;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
+    .row {
+      display: flex;
+      gap: 14px;
+    }
+
+    .row .field {
+      flex: 1;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 13px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      margin-top: 4px;
+      letter-spacing: 0.1px;
+    }
+
+    button[type="submit"]:hover { background: #1d4ed8; }
+    button[type="submit"]:active { transform: scale(0.99); }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin-top: 20px;
+      line-height: 1.5;
+    }
+
+    /* Success state */
+    .success {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .success-icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .success h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .success p {
+      font-size: 0.9rem;
+      color: #64748b;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <span class="hero-icon">💧</span>
+    <h1>Set up a hydration tracker for your parents</h1>
+    <p>Fill this in and I'll personally help you get your parents set up with a WhatsApp hydration tracker — no app downloads, no tech know-how needed.</p>
+  </div>
+
+  <div class="card">
+    <form id="signup-form">
+
+      <div class="section-label">About you</div>
+
+      <div class="row">
+        <div class="field">
+          <label for="your-name">Your name</label>
+          <input type="text" id="your-name" name="your_name" placeholder="Riya" required />
+        </div>
+        <div class="field">
+          <label for="email">Your email</label>
+          <input type="email" id="email" name="email" placeholder="riya@gmail.com" required />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-label">About your parents</div>
+
+      <div class="field">
+        <label for="parent-1-name">Parent 1 — name &amp; WhatsApp number</label>
+        <input type="text" id="parent-1-name" name="parent_1_name" placeholder="Mum — +91 98765 43210" required />
+        <p class="hint">Include the country code, e.g. +91 for India.</p>
+      </div>
+
+      <div class="field">
+        <label for="parent-2-name">Parent 2 — name &amp; WhatsApp number <span class="optional">(optional)</span></label>
+        <input type="text" id="parent-2-name" name="parent_2_name" placeholder="Dad — +91 98765 43211" />
+      </div>
+
+      <div class="field">
+        <label for="nicknames">What do you call them?</label>
+        <input type="text" id="nicknames" name="nicknames" placeholder="e.g. Aai, Baba / Mum, Dad / Amma, Appa" />
+        <p class="hint">The tracker will greet them by these names — makes it feel personal.</p>
+      </div>
+
+      <div class="field">
+        <label for="message">Anything else you'd like me to know <span class="optional">(optional)</span></label>
+        <textarea id="message" name="message" placeholder="e.g. My dad's goal is 2.5L, my mum prefers gentle reminders, they're based in Pune..."></textarea>
+      </div>
+
+      <button type="submit">Send — I'll be in touch 💧</button>
+
+    </form>
+
+    <div class="success" id="success-msg">
+      <span class="success-icon">🎉</span>
+      <h2>Got it — thank you!</h2>
+      <p>I'll reach out to you shortly to get your parents set up. Keep an eye on your inbox.</p>
+    </div>
+  </div>
+
+  <p class="footer-note">Your details are only used to set up the tracker.<br>No spam, ever.</p>
+
+  <script>
+    document.getElementById('signup-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      // Replace this with your form submission endpoint (e.g. Formspree, Google Apps Script, etc.)
+      // For now it just shows the success state.
+      const form = document.getElementById('signup-form');
+      const success = document.getElementById('success-msg');
+      form.style.display = 'none';
+      success.style.display = 'block';
+    });
+  </script>
+
+</body>
+</html>

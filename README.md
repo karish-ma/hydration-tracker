@@ -52,6 +52,16 @@ INSERT INTO users (phone, name, daily_goal_ml) VALUES
    - **Project URL** → `SUPABASE_URL`
    - **service_role** key → `SUPABASE_KEY` (service role lets the app write rows; never expose it in the frontend)
 
+https://tezrsrvgqyeffatuloaw.supabase.co
+sb_publishable_wwEEW_GLaphEgFnJuiDprg_Zqyrs15P
+curl 'https://api.twilio.com/2010-04-01/Accounts/AC9d1a9d94d9ca29fb6931520df3c89dcc/Messages.json' -X POST \
+--data-urlencode 'To=whatsapp:+18578910334' \
+--data-urlencode 'From=whatsapp:+14155238886' \
+--data-urlencode 'ContentSid=HXb5b62575e6e4ff6129ad7c8efe1f983e' \
+--data-urlencode 'ContentVariables={"1":"12/1","2":"3pm"}' \
+-u AC9d1a9d94d9ca29fb6931520df3c89dcc:a199beb5202ba856fe37e8b8c9d87f39
+
+
 ---
 
 ## 2. Twilio WhatsApp setup
