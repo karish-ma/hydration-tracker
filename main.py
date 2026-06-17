@@ -433,11 +433,24 @@ def welcome_message(user: dict) -> str:
 def send_daily_summaries() -> None:
     logger.info('Sending daily summaries')
     today_str = datetime.now(IST).strftime('%d %b %Y')
+    today_date = datetime.now(IST).strftime('%Y-%m-%d')
     users = supabase.table('users').select('*').execute().data
     family_lines = []
 
     for user in users:
         phone = user['phone']
+        # Atomically mark as sent — skip if already sent today (prevents duplicate sends if cron runs twice)
+        result = (
+            supabase.table('users')
+            .update({'last_summary_date': today_date})
+            .eq('phone', phone)
+            .neq('last_summary_date', today_date)
+            .execute()
+        )
+        if not result.data:
+            logger.info('Summary already sent today for %s, skipping', phone)
+            continue
+
         goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
         total = get_today_total(phone)
         pct = min(100, int(total / goal * 100))
