@@ -2,7 +2,7 @@ import os
 import re
 import random
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import requests as http_requests
@@ -37,6 +37,85 @@ if missing:
     logger.warning('Missing environment variables: %s', missing)
 
 IST = ZoneInfo('Asia/Kolkata')
+
+COUNTRY_TIMEZONES: dict[str, str] = {
+    '1':   'America/New_York',
+    '7':   'Europe/Moscow',
+    '20':  'Africa/Cairo',
+    '27':  'Africa/Johannesburg',
+    '30':  'Europe/Athens',
+    '31':  'Europe/Amsterdam',
+    '32':  'Europe/Brussels',
+    '33':  'Europe/Paris',
+    '34':  'Europe/Madrid',
+    '36':  'Europe/Budapest',
+    '39':  'Europe/Rome',
+    '40':  'Europe/Bucharest',
+    '41':  'Europe/Zurich',
+    '43':  'Europe/Vienna',
+    '44':  'Europe/London',
+    '45':  'Europe/Copenhagen',
+    '46':  'Europe/Stockholm',
+    '47':  'Europe/Oslo',
+    '48':  'Europe/Warsaw',
+    '49':  'Europe/Berlin',
+    '51':  'America/Lima',
+    '52':  'America/Mexico_City',
+    '54':  'America/Argentina/Buenos_Aires',
+    '55':  'America/Sao_Paulo',
+    '56':  'America/Santiago',
+    '57':  'America/Bogota',
+    '60':  'Asia/Kuala_Lumpur',
+    '61':  'Australia/Sydney',
+    '62':  'Asia/Jakarta',
+    '63':  'Asia/Manila',
+    '64':  'Pacific/Auckland',
+    '65':  'Asia/Singapore',
+    '66':  'Asia/Bangkok',
+    '81':  'Asia/Tokyo',
+    '82':  'Asia/Seoul',
+    '84':  'Asia/Ho_Chi_Minh',
+    '86':  'Asia/Shanghai',
+    '90':  'Europe/Istanbul',
+    '91':  'Asia/Kolkata',
+    '92':  'Asia/Karachi',
+    '94':  'Asia/Colombo',
+    '98':  'Asia/Tehran',
+    '212': 'Africa/Casablanca',
+    '213': 'Africa/Algiers',
+    '216': 'Africa/Tunis',
+    '218': 'Africa/Tripoli',
+    '234': 'Africa/Lagos',
+    '254': 'Africa/Nairobi',
+    '255': 'Africa/Dar_es_Salaam',
+    '256': 'Africa/Kampala',
+    '880': 'Asia/Dhaka',
+    '966': 'Asia/Riyadh',
+    '971': 'Asia/Dubai',
+    '972': 'Asia/Jerusalem',
+    '977': 'Asia/Kathmandu',
+}
+
+
+def timezone_for_phone(phone: str) -> ZoneInfo:
+    """Infer timezone from E.164 country-code prefix (+1 → US/ET, +91 → India, etc.)."""
+    digits = phone.lstrip('+')
+    for length in (3, 2, 1):
+        code = digits[:length]
+        if code in COUNTRY_TIMEZONES:
+            return ZoneInfo(COUNTRY_TIMEZONES[code])
+    return IST
+
+
+def get_user_tz(user: dict) -> ZoneInfo:
+    """Return the user's timezone: stored preference first, then phone-number inference."""
+    tz_str = user.get('timezone')
+    if tz_str:
+        try:
+            return ZoneInfo(tz_str)
+        except Exception:
+            pass
+    return timezone_for_phone(user['phone'])
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -150,9 +229,26 @@ def decimal_suggestion(text: str) -> 'str | None':
 
 
 def get_today_total(phone: str) -> int:
-    today = datetime.now(IST).date()
-    start = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=IST).isoformat()
-    end = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=IST).isoformat()
+    tz = timezone_for_phone(phone)
+    today = datetime.now(tz).date()
+    start = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=tz).isoformat()
+    end = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=tz).isoformat()
+    result = (
+        supabase.table('hydration_logs')
+        .select('amount_ml')
+        .eq('user_phone', phone)
+        .gte('logged_at', start)
+        .lte('logged_at', end)
+        .execute()
+    )
+    return sum(row['amount_ml'] for row in result.data)
+
+
+def get_yesterday_total(phone: str) -> int:
+    tz = timezone_for_phone(phone)
+    yesterday = (datetime.now(tz) - timedelta(days=1)).date()
+    start = datetime(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0, tzinfo=tz).isoformat()
+    end = datetime(yesterday.year, yesterday.month, yesterday.day, 23, 59, 59, tzinfo=tz).isoformat()
     result = (
         supabase.table('hydration_logs')
         .select('amount_ml')
@@ -297,6 +393,43 @@ STRINGS = {
                 "Hydration goal: complete. Legend status achieved. 💧🎉",
             ],
         ],
+        'morning_recap': {
+            'greeting': 'Good morning{name}! ☀️',
+            'stat': 'Yesterday you drank *{total}ml* out of your {goal}ml goal.',
+            'over': [
+                "You hit {actual_pct}% — {over}% beyond your goal. That's not discipline, that's dedication. 🏆 Same energy today?",
+                "Full tank and then some! {over}% over target. Your body is loving you right now. Let's go again. 💧🔥",
+                "Overachiever alert! {total}ml — {over}% above goal. Today, same energy. ⚡",
+                "Yesterday you didn't just meet the bar — you raised it. {actual_pct}%. Can you top it? 🚀",
+                "{over}% over goal. You made it look easy. Keep that streak alive today. 💪",
+            ],
+            'exact': [
+                "Exactly on goal — perfectly on point. 🎯 Let's do it again.",
+                "Hit your {goal}ml target exactly. Clean. Precise. Now do it again. 💧",
+                "Perfect score! {goal}ml logged. Today's goal? Same thing. 🏆",
+            ],
+            'close': [
+                "So close yesterday — just {shortfall}ml away from your goal. Today, let's close it out. 🎯",
+                "{actual_pct}% of your goal — nearly there! That {shortfall}ml gap? Let's kill it today. 💪",
+                "You were {shortfall}ml away from the finish line yesterday. Make today the day. 🌊",
+                "{actual_pct}% — solid effort! A little more focus today and you're over the line. 🏁",
+                "Almost had it! {shortfall}ml stood between you and 100%. Not today. 💧",
+            ],
+            'half': [
+                "Past the halfway mark! Let's see what happens when you go all in today. 🌊",
+                "{total}ml logged — you showed up. Now let's double down. Your goal is {goal}ml. 💪",
+                "{actual_pct}% is progress. Progress builds habit. Today, aim for the full {goal}ml. 🎯",
+                "Good start yesterday. Every sip counts — let's make today count even more. ⚡",
+                "Halfway there. Push past the line today — you're more capable than yesterday's score. 💧",
+            ],
+            'low': [
+                "Yesterday was a dry day. No judgment — just a nudge. Today's wide open. 💧",
+                "Your body was probably asking for more yesterday. Listen to it today! 🌊",
+                "We all have off days. Yesterday was one. Fresh start today — let's make it count. 💪",
+                "Only {actual_pct}% yesterday — that makes today your comeback day. Ready? 🔥",
+                "Your goal is {goal}ml. Yesterday you got {actual_pct}% there. Today, let's flip the story. 🚀",
+            ],
+        },
     },
     'mr': {
         'welcome': (
@@ -355,6 +488,43 @@ STRINGS = {
                 "हायड्रेशन ध्येय: पूर्ण. आज खूप छान! 💧🎉",
             ],
         ],
+        'morning_recap': {
+            'greeting': 'शुभ सकाळ{name}! ☀️',
+            'stat': 'काल तुम्ही *{total}ml* प्यायलात (लक्ष्य: {goal}ml).',
+            'over': [
+                "तुम्ही {actual_pct}% गाठलं — लक्ष्यापेक्षा {over}% जास्त! हीच ऊर्जा आज ठेवा. 🏆",
+                "कमाल! {over}% जास्त पाणी प्यायलात. आज पुन्हा तेच करूया. 💧🔥",
+                "लक्ष्यापेक्षा {over}% अधिक! तुमचं शरीर आभारी आहे. आज पण असंच! ⚡",
+                "काल बार उंचावलात — {actual_pct}%! आज आणखी उंच जाऊ का? 🚀",
+                "{over}% जास्त — सहज केलंत. हा सिलसिला कायम ठेवा. 💪",
+            ],
+            'exact': [
+                "अगदी बरोब्बर {goal}ml — परफेक्ट! 🎯 आज पुन्हा करा.",
+                "लक्ष्य अचूक गाठलं. स्वच्छ. नेमकं. आता पुन्हा करा. 💧",
+                "शंभर टक्के! आज पण तेच ध्येय. 🏆",
+            ],
+            'close': [
+                "इतके जवळ होतात — फक्त {shortfall}ml दूर! आज ते अंतर भरूया. 🎯",
+                "{actual_pct}% — जवळजवळ पूर्ण! तो {shortfall}ml चा फरक आज संपवा. 💪",
+                "{shortfall}ml दूर होतात यशापासून. आज तो क्षण येऊ द्या. 🌊",
+                "{actual_pct}% — उत्तम प्रयत्न! आज थोडी जास्त मेहनत आणि लक्ष्य पार. 🏁",
+                "जवळजवळ झालं होतं! {shortfall}ml राहिले होते. आज नाही राहणार. 💧",
+            ],
+            'half': [
+                "अर्ध्यावर पोहोचलात! आज पूर्ण करण्याची वेळ आहे. 🌊",
+                "{total}ml नोंदवलं — सुरुवात केली. आता दुप्पट करूया. लक्ष्य {goal}ml आहे. 💪",
+                "{actual_pct}% म्हणजे प्रगती. प्रगती सवयी बनवते. आज {goal}ml चं लक्ष्य गाठा. 🎯",
+                "काल चांगली सुरुवात झाली. आज आणखी पुढे जाऊया. ⚡",
+                "अर्धा पल्ला मारला. आज पूर्ण पल्ला मारायचा आहे. 💧",
+            ],
+            'low': [
+                "काल कमी झालं. ठीक आहे — आज नवी सुरुवात आहे. 💧",
+                "काल शरीराला जास्त पाणी हवं होतं. आज त्याचं ऐका! 🌊",
+                "प्रत्येकाचे वाईट दिवस येतात. आज मात्र वेगळं करूया. 💪",
+                "फक्त {actual_pct}% काल — आज कमबॅक करायचा आहे. तयार? 🔥",
+                "लक्ष्य {goal}ml आहे. काल {actual_pct}% झालं. आज वेगळी कहाणी लिहूया. 🚀",
+            ],
+        },
     },
     'de': {
         'welcome': (
@@ -413,6 +583,43 @@ STRINGS = {
                 "Hydrationsziel: erledigt. Heute war großartig! 💧🎉",
             ],
         ],
+        'morning_recap': {
+            'greeting': 'Guten Morgen{name}! ☀️',
+            'stat': 'Gestern hast du *{total}ml* von deinem {goal}ml-Ziel getrunken.',
+            'over': [
+                "Du hast {actual_pct}% erreicht — {over}% über deinem Ziel. Das ist echte Hingabe. 🏆 Gleiche Energie heute?",
+                "Volltank und mehr! {over}% über dem Ziel. Dein Körper liebt dich. Nochmal! 💧🔥",
+                "Übererfüllt! {total}ml — {over}% über Ziel. Heute dieselbe Energie. ⚡",
+                "Gestern die Latte höhergelegt — {actual_pct}%! Kannst du das toppen? 🚀",
+                "{over}% über Ziel. Einfach gemacht. Halt den Lauf aufrecht. 💪",
+            ],
+            'exact': [
+                "Genau auf Ziel — präzise! 🎯 Mach's nochmal.",
+                "Exakt {goal}ml getroffen. Sauber. Genau. Und nochmal. 💧",
+                "100%! Heute dasselbe Ziel. 🏆",
+            ],
+            'close': [
+                "So nah — nur {shortfall}ml gefehlt! Heute schließen wir die Lücke. 🎯",
+                "{actual_pct}% — fast geschafft! Die {shortfall}ml Lücke? Heute eliminieren wir sie. 💪",
+                "Nur {shortfall}ml von der Ziellinie entfernt. Heute ist der Tag. 🌊",
+                "{actual_pct}% — tolle Leistung! Noch etwas mehr Fokus heute und du bist drüber. 🏁",
+                "Fast! Nur {shortfall}ml zwischen dir und 100%. Nicht heute. 💧",
+            ],
+            'half': [
+                "Über die Hälfte! Mal sehen was passiert, wenn du heute alles gibst. 🌊",
+                "{total}ml getrunken — du warst dabei. Jetzt verdoppeln. Dein Ziel: {goal}ml. 💪",
+                "{actual_pct}% ist Fortschritt. Fortschritt baut Gewohnheiten. Heute: volle {goal}ml. 🎯",
+                "Guter Start gestern. Heute noch mehr draus machen. ⚡",
+                "Halbzeit. Heute über die Linie — du kannst mehr als gestern. 💧",
+            ],
+            'low': [
+                "Gestern war es wenig. Kein Problem — heute ist ein neuer Tag. 💧",
+                "Dein Körper hat gestern mehr gewollt. Heute auf ihn hören! 🌊",
+                "Jeder hat schlechte Tage. Gestern war einer davon. Heute zählt. 💪",
+                "Nur {actual_pct}% gestern — heute ist dein Comeback-Tag. Bereit? 🔥",
+                "Dein Ziel: {goal}ml. Gestern: {actual_pct}%. Heute schreiben wir eine andere Geschichte. 🚀",
+            ],
+        },
     },
 }
 
@@ -430,15 +637,86 @@ def welcome_message(user: dict) -> str:
     return t(lang, 'welcome', name=name_part, goal=goal)
 
 
+def send_morning_recap() -> None:
+    logger.info('Sending morning recaps (hourly sweep)')
+    users = supabase.table('users').select('*').execute().data
+    for user in users:
+        phone = user['phone']
+        tz = get_user_tz(user)
+        local_now = datetime.now(tz)
+
+        if local_now.hour != 8:
+            continue
+
+        today_date = local_now.strftime('%Y-%m-%d')
+        result = (
+            supabase.table('users')
+            .update({'last_recap_date': today_date})
+            .eq('phone', phone)
+            .neq('last_recap_date', today_date)
+            .execute()
+        )
+        if not result.data:
+            logger.info('Morning recap already sent today for %s, skipping', phone)
+            continue
+
+        lang = user.get('language') or 'en'
+        mr = STRINGS.get(lang, STRINGS['en'])['morning_recap']
+        goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
+        yesterday_total = get_yesterday_total(phone)
+        actual_pct = int(yesterday_total / goal * 100)
+        shortfall = goal - yesterday_total
+        over = actual_pct - 100
+        name = greeting(user)
+
+        fmt = dict(actual_pct=actual_pct, over=over, shortfall=shortfall, total=yesterday_total, goal=goal)
+
+        if actual_pct >= 100 and over > 0:
+            recap = random.choice(mr['over']).format(**fmt)
+        elif actual_pct >= 100:
+            recap = random.choice(mr['exact']).format(**fmt)
+        elif actual_pct >= 75:
+            recap = random.choice(mr['close']).format(**fmt)
+        elif actual_pct >= 50:
+            recap = random.choice(mr['half']).format(**fmt)
+        else:
+            recap = random.choice(mr['low']).format(**fmt)
+
+        greeting_line = mr['greeting'].format(name=f', {name}' if name else '')
+        msg = (
+            f'{greeting_line}\n\n'
+            f'{mr["stat"].format(**fmt)}\n'
+            f'{recap}'
+        )
+
+        try:
+            if META_PHONE_NUMBER_ID:
+                send_meta_whatsapp(phone, msg)
+            else:
+                send_whatsapp(phone, msg)
+        except Exception as exc:
+            logger.error('Failed morning recap for %s: %s', phone, exc)
+            # Reset so next hourly run can retry
+            supabase.table('users').update({'last_recap_date': None}).eq('phone', phone).execute()
+
+
 def send_daily_summaries() -> None:
-    logger.info('Sending daily summaries')
-    today_str = datetime.now(IST).strftime('%d %b %Y')
-    today_date = datetime.now(IST).strftime('%Y-%m-%d')
+    logger.info('Sending daily summaries (hourly sweep)')
     users = supabase.table('users').select('*').execute().data
     family_lines = []
 
     for user in users:
         phone = user['phone']
+        tz = get_user_tz(user)
+        local_now = datetime.now(tz)
+
+        # Only send at 8pm in the user's local timezone
+        if local_now.hour != 20:
+            continue
+
+        today_str = local_now.strftime('%d %b %Y')
+        today_date = local_now.strftime('%Y-%m-%d')
+
         # Atomically mark as sent — skip if already sent today (prevents duplicate sends if cron runs twice)
         result = (
             supabase.table('users')
@@ -451,60 +729,93 @@ def send_daily_summaries() -> None:
             logger.info('Summary already sent today for %s, skipping', phone)
             continue
 
+        lang = user.get('language') or 'en'
         goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
         total = get_today_total(phone)
-        pct = min(100, int(total / goal * 100))
-        status = '🎉 Goal reached!' if total >= goal else f'Still need {goal - total}ml'
+        actual_pct = int(total / goal * 100)
+        bar_pct = min(100, actual_pct)
+
+        if actual_pct >= 100:
+            over = actual_pct - 100
+            status = f'🏆 You crushed it — {over}% over your goal!' if over > 0 else '🏆 Exactly on goal — perfect!'
+        elif actual_pct >= 50:
+            remaining = goal - total
+            status = f'Almost there! Just {remaining}ml to go 💪'
+        else:
+            remaining = goal - total
+            status = f'Still {remaining}ml to go — let\'s finish strong! 💧'
+
+        motivation = motivation_phrase(lang, bar_pct)
+
         try:
             if META_PHONE_NUMBER_ID:
                 send_meta_whatsapp_template(phone, 'hydration_summary', [
                     today_str, f'{total}ml', f'{goal}ml', status,
                 ])
             else:
-                bar = '█' * (pct // 10) + '░' * (10 - pct // 10)
+                bar = '█' * (bar_pct // 10) + '░' * (10 - bar_pct // 10)
                 msg = (
                     f'💧 *Daily Summary — {today_str}*\n'
                     f'{greeting(user)}!\n\n'
-                    f'{bar} {pct}%\n'
+                    f'{bar} {bar_pct}%\n'
                     f'Drank: *{total}ml* / {goal}ml\n'
-                    f'{status}'
+                    f'{status}\n'
+                    f'{motivation}'
                 )
                 send_whatsapp(phone, msg)
         except Exception as exc:
             logger.error('Failed summary for %s: %s', phone, exc)
-        family_lines.append(f'• {display_name(user)}: {total}/{goal}ml ({pct}%)')
+        family_lines.append(f'• {display_name(user)}: {total}/{goal}ml ({actual_pct}%)')
 
-    admin_msg = f'👨‍👩‍👧‍👦 *Family Hydration — {today_str}*\n\n' + '\n'.join(family_lines)
-    try:
-        send_whatsapp(ADMIN_PHONE, admin_msg)
-    except Exception as exc:
-        logger.error('Failed admin summary: %s', exc)
+    if family_lines:
+        admin_msg = f'👨‍👩‍👧‍👦 *Family Hydration*\n\n' + '\n'.join(family_lines)
+        try:
+            send_whatsapp(ADMIN_PHONE, admin_msg)
+        except Exception as exc:
+            logger.error('Failed admin summary: %s', exc)
 
 
 def send_nudges() -> None:
-    logger.info('Sending midday nudges')
+    logger.info('Sending midday nudges (hourly sweep)')
     users = supabase.table('users').select('*').execute().data
     for user in users:
         phone = user['phone']
+        tz = get_user_tz(user)
+        local_now = datetime.now(tz)
+
+        # Only send at 1pm in the user's local timezone
+        if local_now.hour != 13:
+            continue
+
+        today_date = local_now.strftime('%Y-%m-%d')
         goal = user.get('daily_goal_ml') or DAILY_GOAL_ML
         total = get_today_total(phone)
         if total >= goal * 0.4:
             continue
+        result = (
+            supabase.table('users')
+            .update({'last_nudge_date': today_date})
+            .eq('phone', phone)
+            .neq('last_nudge_date', today_date)
+            .execute()
+        )
+        if not result.data:
+            logger.info('Nudge already sent today for %s, skipping', phone)
+            continue
         remaining = goal - total
+        msg = (
+            f'💧 Hey {greeting(user)}! Quick check-in —\n'
+            f'You\'ve had *{total}ml* so far today.\n'
+            f'Just *{remaining}ml* more to hit your goal. You\'ve got this! 💪'
+        )
         try:
             if META_PHONE_NUMBER_ID:
-                send_meta_whatsapp_template(phone, 'summary', [
-                    greeting(user), f'{total}ml', f'{remaining}ml',
-                ])
+                send_meta_whatsapp(phone, msg)
             else:
-                msg = (
-                    f'💧 Hey {greeting(user)}! Quick check-in —\n'
-                    f'You\'ve had *{total}ml* so far today.\n'
-                    f'Just *{remaining}ml* more to hit your goal. You\'ve got this! 💪'
-                )
                 send_whatsapp(phone, msg)
         except Exception as exc:
             logger.error('Failed nudge for %s: %s', phone, exc)
+            supabase.table('users').update({'last_nudge_date': None}).eq('phone', phone).execute()
 
 
 @app.route('/add-user', methods=['POST'])
@@ -573,6 +884,27 @@ def process_message(phone: str, body: str) -> str:
         supabase.table('users').update({'language': None}).eq('phone', phone).execute()
         return LANGUAGE_PICKER
 
+    # Timezone command: "timezone IST" or "timezone Asia/Kolkata"
+    TIMEZONE_ALIASES = {
+        'ist': 'Asia/Kolkata', 'india': 'Asia/Kolkata',
+        'gmt': 'UTC', 'utc': 'UTC',
+        'est': 'America/New_York', 'edt': 'America/New_York',
+        'cst': 'America/Chicago', 'cdt': 'America/Chicago',
+        'pst': 'America/Los_Angeles', 'pdt': 'America/Los_Angeles',
+        'gst': 'Asia/Dubai', 'uae': 'Asia/Dubai',
+        'pkt': 'Asia/Karachi', 'bst': 'Asia/Dhaka',
+        'sgt': 'Asia/Singapore', 'jst': 'Asia/Tokyo',
+    }
+    if cmd.startswith('timezone ') or cmd.startswith('tz '):
+        tz_arg = body.strip().split(None, 1)[1].strip()
+        tz_str = TIMEZONE_ALIASES.get(tz_arg.lower(), tz_arg)
+        try:
+            ZoneInfo(tz_str)
+            supabase.table('users').update({'timezone': tz_str}).eq('phone', phone).execute()
+            return f'✅ Timezone set to {tz_str}. Your daily messages will now arrive at the right times!'
+        except Exception:
+            return f'❓ Unknown timezone "{tz_arg}". Try `timezone IST`, `timezone Asia/Kolkata`, etc.'
+
     # Greetings — show welcome/instructions
     if is_new or any(w in cmd for w in ['hi', 'hello', 'hey', 'hii', 'helo', 'hola', 'namaste', 'start']):
         return welcome_message(user)
@@ -602,7 +934,7 @@ def process_message(phone: str, body: str) -> str:
     supabase.table('hydration_logs').insert({
         'user_phone': phone,
         'amount_ml': amount,
-        'logged_at': datetime.now(IST).isoformat(),
+        'logged_at': datetime.now(get_user_tz(user)).isoformat(),
     }).execute()
 
     total = get_today_total(phone)
@@ -704,8 +1036,9 @@ def privacy():
 
 
 if __name__ == '__main__':
-    scheduler = BackgroundScheduler(timezone=IST)
-    scheduler.add_job(send_daily_summaries, 'cron', hour=20, minute=0)
-    scheduler.add_job(send_nudges, 'cron', hour=13, minute=0)
+    scheduler = BackgroundScheduler(timezone='UTC')
+    scheduler.add_job(send_morning_recap, 'cron', minute=0)
+    scheduler.add_job(send_daily_summaries, 'cron', minute=0)
+    scheduler.add_job(send_nudges, 'cron', minute=0)
     scheduler.start()
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

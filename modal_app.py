@@ -1,5 +1,5 @@
 import modal
-from main import app as flask_app, send_daily_summaries, send_nudges
+from main import app as flask_app, send_daily_summaries, send_nudges, send_morning_recap
 
 app = modal.App("hydration-tracker")
 
@@ -12,12 +12,17 @@ image = (
 secrets = [modal.Secret.from_name("hydration-tracker-secrets")]
 
 
-@app.function(image=image, secrets=secrets, schedule=modal.Cron("30 14 * * *"))
+@app.function(image=image, secrets=secrets, schedule=modal.Cron("0 * * * *"))
+def run_morning_recap():
+    send_morning_recap()
+
+
+@app.function(image=image, secrets=secrets, schedule=modal.Cron("0 * * * *"))
 def run_daily_summaries():
     send_daily_summaries()
 
 
-@app.function(image=image, secrets=secrets, schedule=modal.Cron("30 7 * * *"))
+@app.function(image=image, secrets=secrets, schedule=modal.Cron("0 * * * *"))
 def run_nudges():
     send_nudges()
 
