@@ -653,7 +653,7 @@ def send_morning_recap() -> None:
             supabase.table('users')
             .update({'last_recap_date': today_date})
             .eq('phone', phone)
-            .neq('last_recap_date', today_date)
+            .or_(f'last_recap_date.is.null,last_recap_date.neq.{today_date}')
             .execute()
         )
         if not result.data:
@@ -722,7 +722,7 @@ def send_daily_summaries() -> None:
             supabase.table('users')
             .update({'last_summary_date': today_date})
             .eq('phone', phone)
-            .neq('last_summary_date', today_date)
+            .or_(f'last_summary_date.is.null,last_summary_date.neq.{today_date}')
             .execute()
         )
         if not result.data:
@@ -796,7 +796,7 @@ def send_nudges() -> None:
             supabase.table('users')
             .update({'last_nudge_date': today_date})
             .eq('phone', phone)
-            .neq('last_nudge_date', today_date)
+            .or_(f'last_nudge_date.is.null,last_nudge_date.neq.{today_date}')
             .execute()
         )
         if not result.data:
